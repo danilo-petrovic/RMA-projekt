@@ -13,8 +13,18 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.ktx.Firebase
+import java.util.Date
 
-data class Trip(val name: String, val description: String)
+data class Trip(
+    val id: String = "",
+    val name: String = "",
+    val description: String = "",
+    val startDate: Date? = null,
+    val endDate: Date? = null,
+    val participants: List<String> = emptyList(),
+    val locationLat: Double? = null,
+    val locationLng: Double? = null
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +35,7 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     val trips = remember { mutableStateListOf<Trip>() }
+    var searchQuery by remember { mutableStateOf("") }
     val uid = Firebase.auth.currentUser?.uid
     val db = Firebase.firestore
 
@@ -38,9 +49,27 @@ fun HomeScreen(
                         if (tripOwnerId != null && tripOwnerId != uid) {
                             val name = doc.getString("name") ?: continue
                             val desc = doc.getString("description") ?: ""
-                            trips.add(Trip(name, desc))
+                            val start = doc.getDate("startDate")
+                            val end = doc.getDate("endDate")
+                            val participants = doc.get("participants") as? List<String> ?: emptyList()
+                            val lat = doc.getDouble("locationLat")
+                            val lng = doc.getDouble("locationLng")
+                            trips.add(
+                                Trip(
+                                    id = doc.id,
+                                    name = name,
+                                    description = desc,
+                                    startDate = start,
+                                    endDate = end,
+                                    participants = participants,
+                                    locationLat = lat,
+                                    locationLng = lng
+                                )
+                            )
+
                         }
                     }
+
                 }
             }
 
@@ -87,11 +116,28 @@ fun HomeScreen(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            if (trips.isEmpty()) {
-                Text("Nema dostupnih putovanja drugih korisnika.")
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Pretraži po nazivu") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+            )
+
+            val filteredTrips = trips.filter {
+                it.name.contains(searchQuery, ignoreCase = true)
+            }
+
+            if (filteredTrips.isEmpty()) {
+                Text("Nema dostupnih putovanja koji odgovaraju pretrazi.")
             } else {
-                trips.forEach { trip ->
+                filteredTrips.forEach { trip ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()

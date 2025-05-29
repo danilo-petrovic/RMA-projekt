@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import com.example.projekt.screens.MyTripsScreen
 import com.example.projekt.screens.*
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -20,7 +19,7 @@ fun AppNavigation() {
             LoginScreen(
                 onLogin = {
                     navController.navigate("home") {
-                        popUpTo("login") { inclusive = true } // uklanja login iz backstack-a
+                        popUpTo("login") { inclusive = true }
                     }
                 },
                 onRegister = { navController.navigate("register") }
@@ -41,9 +40,8 @@ fun AppNavigation() {
             HomeScreen(
                 onCreateTrip = { navController.navigate("createTrip") },
                 onTripClick = { trip ->
-                    val name = trip.name.encodeURL()
-                    val desc = trip.description.encodeURL()
-                    navController.navigate("tripDetail/$name/$desc")
+                    val tripId = trip.id.encodeURL()
+                    navController.navigate("tripDetail/$tripId")
                 },
                 onMyTrips = { navController.navigate("myTrips") },
                 onLogout = {
@@ -53,30 +51,12 @@ fun AppNavigation() {
                     }
                 }
             )
-            HomeScreen(
-                onCreateTrip = { navController.navigate("createTrip") },
-                onTripClick = { trip ->
-                    val name = trip.name.encodeURL()
-                    val desc = trip.description.encodeURL()
-                    navController.navigate("tripDetail/$name/$desc")
-                },
-                onMyTrips = { navController.navigate("myTrips") },
-                onLogout = {
-                    Firebase.auth.signOut()
-                    navController.navigate("login") {
-                        popUpTo("home") { inclusive = true }
-                    }
-                }
-            )
-
         }
 
         composable("createTrip") {
-            CreateTripScreen(
-                onTripCreated = {
-                    navController.popBackStack()
-                }
-            )
+            CreateTripScreen(onTripCreated = {
+                navController.popBackStack()
+            })
         }
 
         composable("myTrips") {
@@ -84,15 +64,14 @@ fun AppNavigation() {
         }
 
         composable(
-            "tripDetail/{name}/{desc}",
-            arguments = listOf(
-                navArgument("name") { type = NavType.StringType },
-                navArgument("desc") { type = NavType.StringType }
-            )
+            "tripDetail/{tripId}",
+            arguments = listOf(navArgument("tripId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val name = URLDecoder.decode(backStackEntry.arguments?.getString("name") ?: "", "UTF-8")
-            val desc = URLDecoder.decode(backStackEntry.arguments?.getString("desc") ?: "", "UTF-8")
-            TripDetailScreen(name, desc, onBack = { navController.popBackStack() })
+            val tripId = URLDecoder.decode(
+                backStackEntry.arguments?.getString("tripId") ?: "",
+                "UTF-8"
+            )
+            TripDetailScreen(tripId = tripId, onBack = { navController.popBackStack() })
         }
     }
 }

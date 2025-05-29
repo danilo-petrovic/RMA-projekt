@@ -32,8 +32,10 @@ fun HomeScreen(
     onCreateTrip: () -> Unit,
     onTripClick: (Trip) -> Unit,
     onMyTrips: () -> Unit,
+    onJoinedTrips: () -> Unit,
     onLogout: () -> Unit
-) {
+)
+ {
     val trips = remember { mutableStateListOf<Trip>() }
     var searchQuery by remember { mutableStateOf("") }
     val uid = Firebase.auth.currentUser?.uid
@@ -46,29 +48,33 @@ fun HomeScreen(
                     trips.clear()
                     for (doc in snapshot.documents) {
                         val tripOwnerId = doc.getString("userId")
-                        if (tripOwnerId != null && tripOwnerId != uid) {
+                        val participants = doc.get("participants") as? List<String> ?: emptyList()
+
+                        if (tripOwnerId != null && tripOwnerId != uid && !participants.contains(uid)) {
                             val name = doc.getString("name") ?: continue
                             val desc = doc.getString("description") ?: ""
                             val start = doc.getDate("startDate")
                             val end = doc.getDate("endDate")
-                            val participants = doc.get("participants") as? List<String> ?: emptyList()
                             val lat = doc.getDouble("locationLat")
                             val lng = doc.getDouble("locationLng")
-                            trips.add(
-                                Trip(
-                                    id = doc.id,
-                                    name = name,
-                                    description = desc,
-                                    startDate = start,
-                                    endDate = end,
-                                    participants = participants,
-                                    locationLat = lat,
-                                    locationLng = lng
-                                )
-                            )
 
+                            if (start == null || start.after(Date())) {
+                                trips.add(
+                                    Trip(
+                                        id = doc.id,
+                                        name = name,
+                                        description = desc,
+                                        startDate = start,
+                                        endDate = end,
+                                        participants = participants,
+                                        locationLat = lat,
+                                        locationLng = lng
+                                    )
+                                )
+                            }
                         }
                     }
+
 
                 }
             }
@@ -100,12 +106,20 @@ fun HomeScreen(
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text("Pridružena putovanja") },
+                            onClick = {
+                                menuExpanded = false
+                                onJoinedTrips()
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Odjavi se") },
                             onClick = {
                                 menuExpanded = false
                                 onLogout()
                             }
                         )
+
                     }
                 }
             )

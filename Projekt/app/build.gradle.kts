@@ -70,5 +70,5 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
     implementation ("com.google.maps.android:maps-compose:2.11.4")
     implementation ("com.google.android.gms:play-services-maps:18.2.0")
-
+    implementation ("androidx.core:core-ktx:1.12.0")
 }

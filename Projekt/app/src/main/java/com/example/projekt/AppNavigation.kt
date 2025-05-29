@@ -44,6 +44,7 @@ fun AppNavigation() {
                     navController.navigate("tripDetail/$tripId")
                 },
                 onMyTrips = { navController.navigate("myTrips") },
+                onJoinedTrips = { navController.navigate("joinedTrips") }, // ✅ DODATO
                 onLogout = {
                     Firebase.auth.signOut()
                     navController.navigate("login") {
@@ -52,6 +53,7 @@ fun AppNavigation() {
                 }
             )
         }
+
 
         composable("createTrip") {
             CreateTripScreen(onTripCreated = {
@@ -73,6 +75,16 @@ fun AppNavigation() {
             )
             TripDetailScreen(tripId = tripId, onBack = { navController.popBackStack() })
         }
+        composable("joinedTrips") {
+            JoinedTripsScreen(
+                onBack = { navController.popBackStack() },
+                onTripClick = { trip ->
+                    val tripId = trip.id.encodeURL()
+                    navController.navigate("tripDetail/$tripId")
+                }
+            )
+        }
+
     }
 }
 

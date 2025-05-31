@@ -19,7 +19,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.ktx.Firebase
-import java.util.Date
+import java.util.*
 
 data class Trip(
     val id: String = "",
@@ -47,10 +47,9 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     val uid = Firebase.auth.currentUser?.uid
     val db = Firebase.firestore
-
     var hasUnreadNotifications by remember { mutableStateOf(false) }
 
-    // Firestore listener for notifications
+    // Listen for unread notifications
     LaunchedEffect(uid) {
         if (uid != null) {
             db.collection("notifications")
@@ -62,6 +61,7 @@ fun HomeScreen(
         }
     }
 
+    // Load available trips
     DisposableEffect(uid) {
         val registration: ListenerRegistration = db.collection("trips")
             .addSnapshotListener { snapshot, error ->
@@ -89,7 +89,8 @@ fun HomeScreen(
                                         endDate = end,
                                         participants = participants,
                                         locationLat = lat,
-                                        locationLng = lng
+                                        locationLng = lng,
+                                        userId = tripOwnerId
                                     )
                                 )
                             }

@@ -51,9 +51,10 @@ fun AppNavigation() {
                         popUpTo("home") { inclusive = true }
                     }
                 },
-                onNotifications = { navController.navigate("notifications") } // ✅ dodato
+                onNotifications = { navController.navigate("notifications") },
             )
         }
+
 
         composable("createTrip") {
             CreateTripScreen(onTripCreated = {
@@ -89,6 +90,7 @@ fun AppNavigation() {
         composable("notifications") {
             NotificationsScreen(onBack = { navController.popBackStack() })
         }
+
     }
 }
 

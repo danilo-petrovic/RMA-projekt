@@ -44,16 +44,16 @@ fun AppNavigation() {
                     navController.navigate("tripDetail/$tripId")
                 },
                 onMyTrips = { navController.navigate("myTrips") },
-                onJoinedTrips = { navController.navigate("joinedTrips") }, // ✅ DODATO
+                onJoinedTrips = { navController.navigate("joinedTrips") },
                 onLogout = {
                     Firebase.auth.signOut()
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
-                }
+                },
+                onNotifications = { navController.navigate("notifications") } // ✅ dodato
             )
         }
-
 
         composable("createTrip") {
             CreateTripScreen(onTripCreated = {
@@ -75,6 +75,7 @@ fun AppNavigation() {
             )
             TripDetailScreen(tripId = tripId, onBack = { navController.popBackStack() })
         }
+
         composable("joinedTrips") {
             JoinedTripsScreen(
                 onBack = { navController.popBackStack() },
@@ -85,6 +86,9 @@ fun AppNavigation() {
             )
         }
 
+        composable("notifications") {
+            NotificationsScreen(onBack = { navController.popBackStack() })
+        }
     }
 }
 

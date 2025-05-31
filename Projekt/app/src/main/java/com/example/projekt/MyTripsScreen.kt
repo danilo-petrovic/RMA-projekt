@@ -23,6 +23,8 @@ fun MyTripsScreen(onBack: () -> Unit) {
     val db = Firebase.firestore
     val formatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
 
+    var tripToDelete by remember { mutableStateOf<Trip?>(null) }
+
     LaunchedEffect(uid) {
         if (uid != null) {
             db.collection("trips")
@@ -47,7 +49,8 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                 endDate = end,
                                 participants = participants,
                                 locationLat = lat,
-                                locationLng = lng
+                                locationLng = lng,
+                                userId = uid // Dodaj userId u model
                             )
                         )
                     }
@@ -143,10 +146,70 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                     Text(end?.let { formatter.format(it) } ?: "Kraj")
                                 }
                             }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            val otherParticipants = trip.participants.filter { it != uid }
+
+                            if (otherParticipants.isEmpty()) {
+                                Text("Niko se još nije prijavio na putovanje.")
+                            } else {
+                                Text("Pridruženi korisnici:", style = MaterialTheme.typography.titleSmall)
+                                otherParticipants.forEach { participantId ->
+                                    var username by remember(participantId) { mutableStateOf("Učitavanje...") }
+
+                                    LaunchedEffect(participantId) {
+                                        db.collection("users").document(participantId).get()
+                                            .addOnSuccessListener { doc ->
+                                                username = doc.getString("username") ?: "Nepoznat korisnik"
+                                            }
+                                            .addOnFailureListener {
+                                                username = "Greška pri učitavanju"
+                                            }
+                                    }
+
+                                    Text("• @$username", style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Button(
+                                onClick = { tripToDelete = trip },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Obriši putovanje")
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Confirm dialog
+    tripToDelete?.let { trip ->
+        AlertDialog(
+            onDismissRequest = { tripToDelete = null },
+            title = { Text("Potvrda brisanja") },
+            text = { Text("Da li ste sigurni da želite obrisati putovanje \"${trip.name}\"?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    Firebase.firestore.collection("trips").document(trip.id)
+                        .delete()
+                        .addOnSuccessListener {
+                            trips.remove(trip)
+                        }
+                    tripToDelete = null
+                }) {
+                    Text("Obriši")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { tripToDelete = null }) {
+                    Text("Otkaži")
+                }
+            }
+        )
     }
 }

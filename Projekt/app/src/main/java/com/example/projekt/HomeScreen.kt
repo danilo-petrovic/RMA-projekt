@@ -5,9 +5,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
@@ -23,7 +29,8 @@ data class Trip(
     val endDate: Date? = null,
     val participants: List<String> = emptyList(),
     val locationLat: Double? = null,
-    val locationLng: Double? = null
+    val locationLng: Double? = null,
+    val userId: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,13 +40,27 @@ fun HomeScreen(
     onTripClick: (Trip) -> Unit,
     onMyTrips: () -> Unit,
     onJoinedTrips: () -> Unit,
-    onLogout: () -> Unit
-)
- {
+    onLogout: () -> Unit,
+    onNotifications: () -> Unit
+) {
     val trips = remember { mutableStateListOf<Trip>() }
     var searchQuery by remember { mutableStateOf("") }
     val uid = Firebase.auth.currentUser?.uid
     val db = Firebase.firestore
+
+    var hasUnreadNotifications by remember { mutableStateOf(false) }
+
+    // Firestore listener for notifications
+    LaunchedEffect(uid) {
+        if (uid != null) {
+            db.collection("notifications")
+                .whereEqualTo("toUserId", uid)
+                .addSnapshotListener { snapshot, _ ->
+                    val unreadExists = snapshot?.documents?.any { !((it.getBoolean("read") ?: false)) } ?: false
+                    hasUnreadNotifications = unreadExists
+                }
+        }
+    }
 
     DisposableEffect(uid) {
         val registration: ListenerRegistration = db.collection("trips")
@@ -74,8 +95,6 @@ fun HomeScreen(
                             }
                         }
                     }
-
-
                 }
             }
 
@@ -91,12 +110,33 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("JoinMe") },
                 actions = {
+                    Box(modifier = Modifier.padding(end = 8.dp)) {
+                        IconButton(onClick = onNotifications) {
+                            Icon(Icons.Default.Notifications, contentDescription = "Notifikacije")
+                        }
+                        if (hasUnreadNotifications) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = (-2).dp, y = 2.dp)
+                                    .drawBehind {
+                                        drawCircle(
+                                            color = Color.Red,
+                                            radius = this.size.minDimension / 2
+                                        )
+                                    }
+                            )
+                        }
+                    }
+
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Opcije")
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
+                        onDismissRequest = { menuExpanded = false },
+                        offset = DpOffset(x = 0.dp, y = 0.dp)
                     ) {
                         DropdownMenuItem(
                             text = { Text("Moja putovanja") },
@@ -119,7 +159,6 @@ fun HomeScreen(
                                 onLogout()
                             }
                         )
-
                     }
                 }
             )

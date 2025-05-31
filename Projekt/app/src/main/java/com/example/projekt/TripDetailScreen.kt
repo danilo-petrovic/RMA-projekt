@@ -33,6 +33,7 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid
     var showDialog by remember { mutableStateOf(false) }
+    var creatorName by remember { mutableStateOf<String?>(null) }
 
     // Sensor shake detection
     DisposableEffect(Unit) {
@@ -77,6 +78,7 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
                 val lat = doc.getDouble("locationLat")
                 val lng = doc.getDouble("locationLng")
                 val participants = doc.get("participants") as? List<String> ?: emptyList()
+                val userId = doc.getString("userId") ?: ""
 
                 tripState.value = Trip(
                     id = tripId,
@@ -86,8 +88,16 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
                     endDate = end,
                     locationLat = lat,
                     locationLng = lng,
-                    participants = participants
+                    participants = participants,
+                    userId = userId
                 )
+
+                if (userId.isNotEmpty()) {
+                    Firebase.firestore.collection("users").document(userId).get()
+                        .addOnSuccessListener { userDoc ->
+                            creatorName = userDoc.getString("username") ?: "Nepoznat korisnik"
+                        }
+                }
             }
     }
 
@@ -103,6 +113,11 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             Text(trip.description, style = MaterialTheme.typography.bodyLarge)
 
+            creatorName?.let {
+                Spacer(Modifier.height(8.dp))
+                Text("Kreirao: @$it", style = MaterialTheme.typography.bodyMedium)
+            }
+
             Spacer(Modifier.height(8.dp))
             trip.startDate?.let {
                 Text("Početak: ${formatter.format(it)}")
@@ -115,9 +130,9 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
             Text("Lokacija:")
 
             if (trip.locationLat != null && trip.locationLng != null) {
-                val position = LatLng(trip.locationLat, trip.locationLng)
+                val latLng = LatLng(trip.locationLat, trip.locationLng)
                 val cameraPositionState = rememberCameraPositionState {
-                    CameraPosition.fromLatLngZoom(position, 10f)
+                    position = CameraPosition.fromLatLngZoom(latLng, 10f)
                 }
 
                 GoogleMap(
@@ -127,17 +142,18 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
                     cameraPositionState = cameraPositionState
                 ) {
                     Marker(
-                        state = MarkerState(position = position),
+                        state = MarkerState(position = latLng),
                         title = "Lokacija"
                     )
                 }
-            } else {
+            }
+            else {
                 Text("Lokacija nije dostupna.")
             }
 
             Spacer(Modifier.height(16.dp))
 
-            if (uid != null && trip.participants.contains(uid)) {
+            if (uid != null && trip.participants.contains(uid) && uid != trip.userId) {
                 Button(onClick = {
                     val updatedParticipants = trip.participants.toMutableList()
                     updatedParticipants.remove(uid)
@@ -163,7 +179,7 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
         }
     }
 
-    // Dialog za potreseni uredaj
+    // Dialog za potreseni uređaj
     if (showDialog && trip != null && uid != null && !trip.participants.contains(uid)) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -176,6 +192,14 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
                     Firebase.firestore.collection("trips").document(trip.id)
                         .update("participants", updatedParticipants)
                         .addOnSuccessListener {
+                            Firebase.firestore.collection("notifications").add(
+                                mapOf(
+                                    "toUserId" to trip.userId,
+                                    "message" to "${currentUser.displayName ?: "Nepoznat korisnik"} se prijavio na putovanje ${trip.name}",
+                                    "timestamp" to Date()
+                                )
+                            )
+
                             showNotification(
                                 context,
                                 "${currentUser.displayName ?: "Nepoznat korisnik"} se pridružio na putovanje ${trip.name}"

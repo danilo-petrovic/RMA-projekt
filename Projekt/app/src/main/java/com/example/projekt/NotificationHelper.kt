@@ -15,16 +15,16 @@ fun showNotification(context: Context, message: String) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val channel = NotificationChannel(
             channelId,
-            "Putovanja",
+            "Trips",
             NotificationManager.IMPORTANCE_DEFAULT
         )
         notificationManager.createNotificationChannel(channel)
     }
 
     val notification = NotificationCompat.Builder(context, channelId)
-        .setContentTitle("JoinMe obavijest")
+        .setContentTitle("JoinMe notification")
         .setContentText(message)
-        .setSmallIcon(R.drawable.ic_world_plane) // Dodaj svoju ikonu u res/drawable/
+        .setSmallIcon(R.drawable.ic_world_plane)
         .build()
 
     notificationManager.notify(Random.nextInt(), notification)

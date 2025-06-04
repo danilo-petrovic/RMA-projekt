@@ -6,12 +6,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +29,7 @@ fun JoinedTripsScreen(onBack: () -> Unit, onTripClick: (Trip) -> Unit) {
                     trips.clear()
                     for (doc in snapshot) {
                         val tripOwnerId = doc.getString("userId") ?: continue
-                        if (tripOwnerId == uid) continue  // izbegni svoja putovanja
+                        if (tripOwnerId == uid) continue
 
                         val name = doc.getString("name") ?: continue
                         val desc = doc.getString("description") ?: ""
@@ -59,10 +59,10 @@ fun JoinedTripsScreen(onBack: () -> Unit, onTripClick: (Trip) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Pridružena putovanja") },
+                title = { Text("Joined trips") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Natrag")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -74,7 +74,12 @@ fun JoinedTripsScreen(onBack: () -> Unit, onTripClick: (Trip) -> Unit) {
                 .padding(16.dp)
         ) {
             if (trips.isEmpty()) {
-                Text("Nema putovanja na koja si se priključio.")
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("There are no joined trips")                }
             } else {
                 trips.forEach { trip ->
                     Card(
@@ -100,7 +105,7 @@ fun JoinedTripsScreen(onBack: () -> Unit, onTripClick: (Trip) -> Unit) {
                                     containerColor = MaterialTheme.colorScheme.error
                                 )
                             ) {
-                                Text("Odjavi se")
+                                Text("Log out")
                             }
                         }
                     }

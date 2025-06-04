@@ -46,27 +46,27 @@ fun CreateTripScreen(onTripCreated: () -> Unit) {
     Column(modifier = Modifier.padding(24.dp)) {
         SharedHeader()
 
-        OutlinedTextField(name, { name = it }, label = { Text("Naziv putovanja") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
 
-        OutlinedTextField(desc, { desc = it }, label = { Text("Opis") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(desc, { desc = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
 
         Row {
             Button(onClick = { showDatePicker { startDate = it } }) {
-                Text(startDate?.toString() ?: "Početak")
+                Text(startDate?.toString() ?: "Beginning")
             }
             Spacer(Modifier.width(8.dp))
             Button(onClick = { showDatePicker { endDate = it } }) {
-                Text(endDate?.toString() ?: "Kraj")
+                Text(endDate?.toString() ?: "End")
             }
         }
 
         Spacer(Modifier.height(16.dp))
-        Text("Označi lokaciju na mapi:")
+        Text("Location")
 
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(LatLng(45.2671, 19.8335), 6f) // Novi Sad kao default
+            position = CameraPosition.fromLatLngZoom(LatLng(45.2671, 19.8335), 6f)
         }
 
         GoogleMap(
@@ -79,7 +79,7 @@ fun CreateTripScreen(onTripCreated: () -> Unit) {
             selectedLatLng?.let {
                 Marker(
                     state = MarkerState(position = it),
-                    title = "Izabrana lokacija"
+                    title = "Chosen location"
                 )
             }
         }
@@ -108,14 +108,14 @@ fun CreateTripScreen(onTripCreated: () -> Unit) {
                     Firebase.firestore.collection("trips")
                         .add(tripData)
                         .addOnSuccessListener { onTripCreated() }
-                        .addOnFailureListener { error = "Greška pri spremanju: ${it.message}" }
+                        .addOnFailureListener { error = "Error: ${it.message}" }
                 } else {
-                    error = "Niste prijavljeni"
+                    error = "You are not logged in"
                 }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Kreiraj")
+            Text("Create")
         }
     }
 }

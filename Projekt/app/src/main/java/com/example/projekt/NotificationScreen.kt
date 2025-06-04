@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.ktx.auth
@@ -36,7 +37,6 @@ fun NotificationsScreen(onBack: () -> Unit) {
                             tempList.add(Pair(message, timestamp))
                         }
                     }
-                    // Sortiraj lokalno po datumu (najnoviji prvi)
                     notifications.clear()
                     notifications.addAll(tempList.sortedByDescending { it.second })
                 }
@@ -46,10 +46,10 @@ fun NotificationsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notifikacije") },
+                title = { Text("Notifications") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Natrag")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -61,7 +61,13 @@ fun NotificationsScreen(onBack: () -> Unit) {
                 .padding(16.dp)
         ) {
             if (notifications.isEmpty()) {
-                Text("Nema notifikacija.")
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("There are no notifications")
+                }
             } else {
                 notifications.forEach { (msg, time) ->
                     Card(

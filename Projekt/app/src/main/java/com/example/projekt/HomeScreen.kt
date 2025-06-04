@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -49,7 +48,6 @@ fun HomeScreen(
     val db = Firebase.firestore
     var hasUnreadNotifications by remember { mutableStateOf(false) }
 
-    // Listen for unread notifications
     LaunchedEffect(uid) {
         if (uid != null) {
             db.collection("notifications")
@@ -61,7 +59,6 @@ fun HomeScreen(
         }
     }
 
-    // Load available trips
     DisposableEffect(uid) {
         val registration: ListenerRegistration = db.collection("trips")
             .addSnapshotListener { snapshot, error ->
@@ -108,12 +105,12 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("JoinMe") },
                 actions = {
                     Box(modifier = Modifier.padding(end = 8.dp)) {
                         IconButton(onClick = onNotifications) {
-                            Icon(Icons.Default.Notifications, contentDescription = "Notifikacije")
+                            Icon(Icons.Default.Notifications, contentDescription = "Notifications")
                         }
                         if (hasUnreadNotifications) {
                             Box(
@@ -132,7 +129,7 @@ fun HomeScreen(
                     }
 
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opcije")
+                        Icon(Icons.Default.MoreVert, contentDescription = "Options")
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
@@ -140,21 +137,21 @@ fun HomeScreen(
                         offset = DpOffset(x = 0.dp, y = 0.dp)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Moja putovanja") },
+                            text = { Text("My trips") },
                             onClick = {
                                 menuExpanded = false
                                 onMyTrips()
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Pridružena putovanja") },
+                            text = { Text("Joined trips") },
                             onClick = {
                                 menuExpanded = false
                                 onJoinedTrips()
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Odjavi se") },
+                            text = { Text("Log out") },
                             onClick = {
                                 menuExpanded = false
                                 onLogout()
@@ -166,7 +163,7 @@ fun HomeScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onCreateTrip) {
-                Icon(Icons.Default.Add, contentDescription = "Dodaj putovanje")
+                Icon(Icons.Default.Add, contentDescription = "Add trip")
             }
         }
     ) { padding ->
@@ -178,7 +175,7 @@ fun HomeScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Pretraži po nazivu") },
+                label = { Text("Search by name") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp)
@@ -189,7 +186,13 @@ fun HomeScreen(
             }
 
             if (filteredTrips.isEmpty()) {
-                Text("Nema dostupnih putovanja koji odgovaraju pretrazi.")
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No trips")
+                }
             } else {
                 filteredTrips.forEach { trip ->
                     Card(

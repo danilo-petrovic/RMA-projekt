@@ -50,7 +50,7 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                 participants = participants,
                                 locationLat = lat,
                                 locationLng = lng,
-                                userId = uid // Dodaj userId u model
+                                userId = uid
                             )
                         )
                     }
@@ -61,10 +61,10 @@ fun MyTripsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Moja putovanja") },
+                title = { Text("My trips") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Natrag")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -72,7 +72,7 @@ fun MyTripsScreen(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
             if (trips.isEmpty()) {
-                Text("Nema vaših putovanja.")
+                Text("There are no trips.")
             } else {
                 trips.forEach { trip ->
                     var name by remember { mutableStateOf(trip.name) }
@@ -110,7 +110,7 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                     db.collection("trips").document(trip.id)
                                         .update("name", it)
                                 },
-                                label = { Text("Naziv") },
+                                label = { Text("Name") },
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(Modifier.height(8.dp))
@@ -121,7 +121,7 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                     db.collection("trips").document(trip.id)
                                         .update("description", it)
                                 },
-                                label = { Text("Opis") },
+                                label = { Text("Description") },
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(Modifier.height(8.dp))
@@ -133,7 +133,7 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                             .update("startDate", it)
                                     }
                                 }) {
-                                    Text(start?.let { formatter.format(it) } ?: "Početak")
+                                    Text(start?.let { formatter.format(it) } ?: "Beginning")
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 Button(onClick = {
@@ -143,7 +143,7 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                             .update("endDate", it)
                                     }
                                 }) {
-                                    Text(end?.let { formatter.format(it) } ?: "Kraj")
+                                    Text(end?.let { formatter.format(it) } ?: "End")
                                 }
                             }
 
@@ -152,19 +152,19 @@ fun MyTripsScreen(onBack: () -> Unit) {
                             val otherParticipants = trip.participants.filter { it != uid }
 
                             if (otherParticipants.isEmpty()) {
-                                Text("Niko se još nije prijavio na putovanje.")
+                                Text("Nobody joined the trip.")
                             } else {
-                                Text("Pridruženi korisnici:", style = MaterialTheme.typography.titleSmall)
+                                Text("Users who have joined:", style = MaterialTheme.typography.titleSmall)
                                 otherParticipants.forEach { participantId ->
-                                    var username by remember(participantId) { mutableStateOf("Učitavanje...") }
+                                    var username by remember(participantId) { mutableStateOf("Loading...") }
 
                                     LaunchedEffect(participantId) {
                                         db.collection("users").document(participantId).get()
                                             .addOnSuccessListener { doc ->
-                                                username = doc.getString("username") ?: "Nepoznat korisnik"
+                                                username = doc.getString("username") ?: "Unknown"
                                             }
                                             .addOnFailureListener {
-                                                username = "Greška pri učitavanju"
+                                                username = "Loading error"
                                             }
                                     }
 
@@ -178,7 +178,7 @@ fun MyTripsScreen(onBack: () -> Unit) {
                                 onClick = { tripToDelete = trip },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
-                                Text("Obriši putovanje")
+                                Text("Delete the trip")
                             }
                         }
                     }
@@ -191,8 +191,8 @@ fun MyTripsScreen(onBack: () -> Unit) {
     tripToDelete?.let { trip ->
         AlertDialog(
             onDismissRequest = { tripToDelete = null },
-            title = { Text("Potvrda brisanja") },
-            text = { Text("Da li ste sigurni da želite obrisati putovanje \"${trip.name}\"?") },
+            title = { Text("Confirm") },
+            text = { Text("Do you want to delete \"${trip.name}\"?") },
             confirmButton = {
                 TextButton(onClick = {
                     Firebase.firestore.collection("trips").document(trip.id)
@@ -202,12 +202,12 @@ fun MyTripsScreen(onBack: () -> Unit) {
                         }
                     tripToDelete = null
                 }) {
-                    Text("Obriši")
+                    Text("Delete")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { tripToDelete = null }) {
-                    Text("Otkaži")
+                    Text("Dismiss")
                 }
             }
         )

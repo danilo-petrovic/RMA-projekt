@@ -35,7 +35,6 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
     var showDialog by remember { mutableStateOf(false) }
     var creatorName by remember { mutableStateOf<String?>(null) }
 
-    // Shake detection
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -67,7 +66,6 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
         }
     }
 
-    // Fetch trip data
     LaunchedEffect(tripId) {
         Firebase.firestore.collection("trips").document(tripId).get()
             .addOnSuccessListener { doc ->
@@ -95,7 +93,7 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
                 if (userId.isNotEmpty()) {
                     Firebase.firestore.collection("users").document(userId).get()
                         .addOnSuccessListener { userDoc ->
-                            creatorName = userDoc.getString("username") ?: "Nepoznat korisnik"
+                            creatorName = userDoc.getString("username") ?: "Unknown"
                         }
                 }
             }
@@ -107,7 +105,7 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
         SharedHeader()
 
         if (trip == null) {
-            Text("Učitavanje...")
+            Text("Loading...")
         } else {
             Text(trip.name, style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(8.dp))
@@ -115,15 +113,15 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
 
             creatorName?.let {
                 Spacer(Modifier.height(8.dp))
-                Text("Kreirao: @$it", style = MaterialTheme.typography.bodyMedium)
+                Text("Created by: @$it", style = MaterialTheme.typography.bodyMedium)
             }
 
             Spacer(Modifier.height(8.dp))
-            trip.startDate?.let { Text("Početak: ${formatter.format(it)}") }
-            trip.endDate?.let { Text("Kraj: ${formatter.format(it)}") }
+            trip.startDate?.let { Text("Beginning: ${formatter.format(it)}") }
+            trip.endDate?.let { Text("End: ${formatter.format(it)}") }
 
             Spacer(Modifier.height(16.dp))
-            Text("Lokacija:")
+            Text("Location:")
 
             if (trip.locationLat != null && trip.locationLng != null) {
                 val latLng = LatLng(trip.locationLat, trip.locationLng)
@@ -139,66 +137,72 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
                 ) {
                     Marker(
                         state = MarkerState(position = latLng),
-                        title = "Lokacija"
+                        title = "Location"
                     )
                 }
             } else {
-                Text("Lokacija nije dostupna.")
+                Text("Location unavailable")
             }
 
             Spacer(Modifier.height(24.dp))
             Button(onClick = onBack) {
-                Text("Natrag")
+                Text("Back")
             }
         }
     }
 
-    // Shake join dialog (notifikacija šalje se tek kad klikne DA)
     if (showDialog && trip != null && uid != null && !trip.participants.contains(uid)) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Pridruži se putovanju?") },
-            text = { Text("Želite li se pridružiti putovanju ${trip.name}?") },
+            title = { Text("Join?") },
+            text = { Text("Do you want to join ${trip.name}?") },
             confirmButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                    val updatedParticipants = trip.participants.toMutableList().apply { add(uid) }
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextButton(onClick = {
+                        showDialog = false
+                        val updatedParticipants = trip.participants.toMutableList().apply { add(uid) }
 
-                    Firebase.firestore.collection("trips").document(trip.id)
-                        .update("participants", updatedParticipants)
-                        .addOnSuccessListener {
-                            Firebase.firestore.collection("users").document(uid).get()
-                                .addOnSuccessListener { userDoc ->
-                                    val username = userDoc.getString("username")
-                                        ?: currentUser?.displayName
-                                        ?: "Nepoznat korisnik"
+                        Firebase.firestore.collection("trips").document(trip.id)
+                            .update("participants", updatedParticipants)
+                            .addOnSuccessListener {
+                                Firebase.firestore.collection("users").document(uid).get()
+                                    .addOnSuccessListener { userDoc ->
+                                        val username = userDoc.getString("username")
+                                            ?: currentUser?.displayName
+                                            ?: "Unknown"
 
-                                    Firebase.firestore.collection("notifications").add(
-                                        mapOf(
-                                            "toUserId" to trip.userId,
-                                            "message" to "$username se prijavio na putovanje ${trip.name}",
-                                            "timestamp" to Date()
+                                        Firebase.firestore.collection("notifications").add(
+                                            mapOf(
+                                                "toUserId" to trip.userId,
+                                                "message" to "$username has just joined the trip named ${trip.name}",
+                                                "timestamp" to Date()
+                                            )
                                         )
-                                    )
 
-                                    showNotification(
-                                        context,
-                                        "$username se pridružio na putovanje ${trip.name}"
-                                    )
+                                        showNotification(
+                                            context,
+                                            "$username has just joined the trip named ${trip.name}"
+                                        )
 
-                                    Toast.makeText(context, "Pridruženi ste!", Toast.LENGTH_SHORT).show()
-                                    tripState.value = trip.copy(participants = updatedParticipants)
-                                }
-                        }
-                }) {
-                    Text("Da")
+                                        Toast.makeText(context, "You have joined!", Toast.LENGTH_SHORT).show()
+                                        tripState.value = trip.copy(participants = updatedParticipants)
+                                    }
+                            }
+                    }) {
+                        Text("Yes")
+                    }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("No")
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Ne")
-                }
-            }
+            dismissButton = {}
         )
     }
 }

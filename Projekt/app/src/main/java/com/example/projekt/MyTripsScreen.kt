@@ -2,6 +2,8 @@ package com.example.projekt.screens
 
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -70,124 +72,26 @@ fun MyTripsScreen(onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+        LazyColumn(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+        ) {
             if (trips.isEmpty()) {
-                Text("There are no trips.")
+                item {
+                    Text("There are no trips.")
+                }
             } else {
-                trips.forEach { trip ->
-                    var name by remember { mutableStateOf(trip.name) }
-                    var desc by remember { mutableStateOf(trip.description) }
-                    var start by remember { mutableStateOf(trip.startDate) }
-                    var end by remember { mutableStateOf(trip.endDate) }
-
-                    val context = LocalContext.current
-                    val calendar = Calendar.getInstance()
-
-                    fun pickDate(current: Date?, onPicked: (Date) -> Unit) {
-                        calendar.time = current ?: Date()
-                        DatePickerDialog(
-                            context,
-                            { _, y, m, d ->
-                                calendar.set(y, m, d)
-                                onPicked(calendar.time)
-                            },
-                            calendar.get(Calendar.YEAR),
-                            calendar.get(Calendar.MONTH),
-                            calendar.get(Calendar.DAY_OF_MONTH)
-                        ).show()
-                    }
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                    ) {
-                        Column(Modifier.padding(12.dp)) {
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = {
-                                    name = it
-                                    db.collection("trips").document(trip.id)
-                                        .update("name", it)
-                                },
-                                label = { Text("Name") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = desc,
-                                onValueChange = {
-                                    desc = it
-                                    db.collection("trips").document(trip.id)
-                                        .update("description", it)
-                                },
-                                label = { Text("Description") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Row {
-                                Button(onClick = {
-                                    pickDate(start) {
-                                        start = it
-                                        db.collection("trips").document(trip.id)
-                                            .update("startDate", it)
-                                    }
-                                }) {
-                                    Text(start?.let { formatter.format(it) } ?: "Beginning")
-                                }
-                                Spacer(Modifier.width(8.dp))
-                                Button(onClick = {
-                                    pickDate(end) {
-                                        end = it
-                                        db.collection("trips").document(trip.id)
-                                            .update("endDate", it)
-                                    }
-                                }) {
-                                    Text(end?.let { formatter.format(it) } ?: "End")
-                                }
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-
-                            val otherParticipants = trip.participants.filter { it != uid }
-
-                            if (otherParticipants.isEmpty()) {
-                                Text("Nobody joined the trip.")
-                            } else {
-                                Text("Users who have joined:", style = MaterialTheme.typography.titleSmall)
-                                otherParticipants.forEach { participantId ->
-                                    var username by remember(participantId) { mutableStateOf("Loading...") }
-
-                                    LaunchedEffect(participantId) {
-                                        db.collection("users").document(participantId).get()
-                                            .addOnSuccessListener { doc ->
-                                                username = doc.getString("username") ?: "Unknown"
-                                            }
-                                            .addOnFailureListener {
-                                                username = "Loading error"
-                                            }
-                                    }
-
-                                    Text("• @$username", style = MaterialTheme.typography.bodyMedium)
-                                }
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Button(
-                                onClick = { tripToDelete = trip },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Text("Delete the trip")
-                            }
-                        }
+                items(trips) { trip ->
+                    TripCard(trip = trip, uid = uid, db = db, formatter = formatter) {
+                        tripToDelete = it
                     }
                 }
             }
         }
     }
 
-    // Confirm dialog
+    // Confirm delete dialog
     tripToDelete?.let { trip ->
         AlertDialog(
             onDismissRequest = { tripToDelete = null },
@@ -211,5 +115,122 @@ fun MyTripsScreen(onBack: () -> Unit) {
                 }
             }
         )
+    }
+}
+
+@Composable
+fun TripCard(
+    trip: Trip,
+    uid: String?,
+    db: com.google.firebase.firestore.FirebaseFirestore,
+    formatter: SimpleDateFormat,
+    onDelete: (Trip) -> Unit
+) {
+    var name by remember { mutableStateOf(trip.name) }
+    var desc by remember { mutableStateOf(trip.description) }
+    var start by remember { mutableStateOf(trip.startDate) }
+    var end by remember { mutableStateOf(trip.endDate) }
+
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+
+    fun pickDate(current: Date?, onPicked: (Date) -> Unit) {
+        calendar.time = current ?: Date()
+        DatePickerDialog(
+            context,
+            { _, y, m, d ->
+                calendar.set(y, m, d)
+                onPicked(calendar.time)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                    db.collection("trips").document(trip.id)
+                        .update("name", it)
+                },
+                label = { Text("Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = desc,
+                onValueChange = {
+                    desc = it
+                    db.collection("trips").document(trip.id)
+                        .update("description", it)
+                },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+            Row {
+                Button(onClick = {
+                    pickDate(start) {
+                        start = it
+                        db.collection("trips").document(trip.id)
+                            .update("startDate", it)
+                    }
+                }) {
+                    Text(start?.let { formatter.format(it) } ?: "Beginning")
+                }
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = {
+                    pickDate(end) {
+                        end = it
+                        db.collection("trips").document(trip.id)
+                            .update("endDate", it)
+                    }
+                }) {
+                    Text(end?.let { formatter.format(it) } ?: "End")
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            val otherParticipants = trip.participants.filter { it != uid }
+
+            if (otherParticipants.isEmpty()) {
+                Text("Nobody joined the trip.")
+            } else {
+                Text("Users who have joined:", style = MaterialTheme.typography.titleSmall)
+                otherParticipants.forEach { participantId ->
+                    var username by remember(participantId) { mutableStateOf("Loading...") }
+
+                    LaunchedEffect(participantId) {
+                        db.collection("users").document(participantId).get()
+                            .addOnSuccessListener { doc ->
+                                username = doc.getString("username") ?: "Unknown"
+                            }
+                            .addOnFailureListener {
+                                username = "Loading error"
+                            }
+                    }
+
+                    Text("• @$username", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Button(
+                onClick = { onDelete(trip) },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Delete the trip")
+            }
+        }
     }
 }

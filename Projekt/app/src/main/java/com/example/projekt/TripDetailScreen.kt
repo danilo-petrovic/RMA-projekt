@@ -121,7 +121,7 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
             trip.endDate?.let { Text("End: ${formatter.format(it)}") }
 
             Spacer(Modifier.height(16.dp))
-            Text("Location:")
+            Text("Start Location:")
 
             if (trip.locationLat != null && trip.locationLng != null) {
                 val latLng = LatLng(trip.locationLat, trip.locationLng)
@@ -137,7 +137,7 @@ fun TripDetailScreen(tripId: String, onBack: () -> Unit) {
                 ) {
                     Marker(
                         state = MarkerState(position = latLng),
-                        title = "Location"
+                        title = "Start Location"
                     )
                 }
             } else {

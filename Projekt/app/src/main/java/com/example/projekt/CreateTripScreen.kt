@@ -52,7 +52,7 @@ fun CreateTripScreen(onTripCreated: () -> Unit) {
         OutlinedTextField(desc, { desc = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
 
-        Row {
+        Column {
             Button(onClick = { showDatePicker { startDate = it } }) {
                 Text(startDate?.toString() ?: "Beginning")
             }
@@ -63,7 +63,7 @@ fun CreateTripScreen(onTripCreated: () -> Unit) {
         }
 
         Spacer(Modifier.height(16.dp))
-        Text("Location")
+        Text("Start Location")
 
         val cameraPositionState = rememberCameraPositionState {
             position = CameraPosition.fromLatLngZoom(LatLng(45.2671, 19.8335), 6f)
